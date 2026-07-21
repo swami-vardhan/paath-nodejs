@@ -1,0 +1,103 @@
+// Spiritual Audio Library Schema
+// Supports Google Drive, FTP, and Local file sources
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+// Audio Source Configuration
+model AudioSource {
+  id          String   @id @default(cuid())
+  name        String                           // Display name for the source
+  type        String                           // "GOOGLE_DRIVE" | "FTP" | "LOCAL"
+  isActive    Boolean  @default(true)
+  
+  // Google Drive specific fields
+  driveFolderId   String?                       // Google Drive folder ID
+  driveApiKey     String?                       // Google API key
+  
+  // FTP specific fields
+  ftpHost         String?
+  ftpPort         Int     @default(21)
+  ftpUsername     String?
+  ftpPassword     String?
+  ftpBasePath     String?                       // Base path on FTP server
+  
+  // Local specific fields
+  localPath       String?                       // Local filesystem path
+  
+  // Metadata
+  lastScannedAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  audioItems      AudioItem[]
+}
+
+// Audio Items - Can be Book, Chapter, Category, or Audio File
+model AudioItem {
+  id            String   @id @default(cuid())
+  sourceId      String
+  source        AudioSource @relation(fields: [sourceId], references: [id])
+  
+  name          String                           // Display name
+  type          String                           // "BOOK" | "CHAPTER" | "CATEGORY" | "AUDIO"
+  path          String                           // Full path in source
+  relativePath  String                           // Relative path for display
+  
+  // Hierarchy
+  parentId      String?                          // Parent item for nesting
+  parent        AudioItem? @relation("ItemHierarchy", fields: [parentId], references: [id])
+  children      AudioItem[] @relation("ItemHierarchy")
+  
+  // Audio specific fields (for type = AUDIO)
+  fileUrl       String?                          // Direct URL to audio file
+  fileSize      Int?                             // File size in bytes
+  duration      Int?                             // Duration in seconds
+  mimeType      String?                          // Audio MIME type
+  
+  // Metadata
+  sortOrder     Int      @default(0)
+  playCount     Int      @default(0)
+  isFavorite    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  playlistItems PlaylistItem[]
+
+  @@index([sourceId])
+  @@index([parentId])
+  @@index([type])
+}
+
+// User Playlists (for saving favorite collections)
+model Playlist {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  items       PlaylistItem[]
+}
+
+model PlaylistItem {
+  id         String   @id @default(cuid())
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  audioItemId String
+  audioItem  AudioItem @relation(fields: [audioItemId], references: [id])
+  sortOrder  Int      @default(0)
+  addedAt    DateTime @default(now())
+  
+  @@unique([playlistId, audioItemId])
+}

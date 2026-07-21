@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Main Divine Audio Application
+  divine-audio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: divine-audio
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./data/custom.db
+      # Google Drive API (optional)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GOOGLE_DRIVE_FOLDER_ID=${GOOGLE_DRIVE_FOLDER_ID:-}
+    volumes:
+      - audio-data:/app/data
+      - local-audio:/app/audio/local:ro
+    networks:
+      - divine-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  audio-data:
+    driver: local
+  local-audio:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOCAL_AUDIO_PATH:-./audio}
+
+networks:
+  divine-network:
+    driver: bridge
