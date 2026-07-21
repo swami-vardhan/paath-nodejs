@@ -226,7 +226,7 @@ This project is licensed under the MIT License.
 - Built with ❤️ for the spiritual community
 - Inspired by traditional Indian devotional music
 - Icons by [Lucide](https://lucide.dev/)
-- UI components by [shadcn/ui](https://ui.shadcn.com/)
+- UI components by [swamivardhan])
 
 ---
 
